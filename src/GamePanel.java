@@ -2,12 +2,14 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.List;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
@@ -26,6 +28,17 @@ public class GamePanel extends JPanel {
     private ArrayList<JumpPad> jumpPads = new ArrayList<>();
     private ArrayList<Crate> crates = new ArrayList<>();
     private ArrayList<Coin> coins = new ArrayList<>();
+    private ArrayList<RotatingBlade> rotatingBlades = new ArrayList<>();
+    private BufferedImage tree1Img;
+    private BufferedImage tree2Img;
+    private BufferedImage tree3Img;
+    private BufferedImage bush1Img;
+    private BufferedImage bush2Img;
+    private BufferedImage cactus1Img;
+    private BufferedImage cactus2Img;
+    private ArrayList<BufferedImage> vegetationImags = new ArrayList<>(
+        Arrays.asList(tree1Img,tree2Img,tree3Img,cactus1Img,cactus2Img,bush1Img,bush2Img)
+    );
     private BufferedImage playerImg;
     // private RepeatingBackground backgroundImg;
     public double gravity = 0.3;
@@ -90,6 +103,7 @@ public class GamePanel extends JPanel {
         spikes.clear();
         saws.clear();
         blades.clear();
+        rotatingBlades.clear();
         jumpPads.clear();
         crates.clear();
         coins.clear();
@@ -99,7 +113,7 @@ public class GamePanel extends JPanel {
         platforms.add(groundPlatform);
         // ground platforms
         double lastGroundPlatformX = platforms.get(0).x + platforms.get(0).width;
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < 19; i++) {
             double gap = rand.nextInt(50) + 300;
             double x = lastGroundPlatformX + gap;
             double y = windowHeight - 70;
@@ -112,7 +126,7 @@ public class GamePanel extends JPanel {
         double lastFloatingPlatformX = 100;
         // floating platforms
         for (int i = 0; i < 13; i++) {
-            double gap = rand.nextInt(100) + 500;
+            double gap = rand.nextInt(100) + 680;
             double x = lastFloatingPlatformX + gap;
             double y = rand.nextDouble(50) + 320;
             Platform platform;
@@ -147,26 +161,26 @@ public class GamePanel extends JPanel {
                 groundPlatformsWithSpike.add(randIndex);
             }
         }
-        // create one moving saw on a random floating platform
-        ArrayList<Integer> floatingPlatformsWithSaws = new ArrayList<>();
+        // create one moving saw on a random ground platform
+        ArrayList<Integer> groundPlatformsWithSaws = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
-            int maxIndex = floatingPlatforms.size();
+            int maxIndex = groundPlatforms.size();
             int minIndex = 1;
             int randIndex = rand.nextInt(maxIndex - minIndex) + minIndex;
-            if (floatingPlatformsWithSaws.contains(randIndex))
+            if (groundPlatformsWithSaws.contains(randIndex))
                 continue;
-            FloatingPlatform floatingPlatform = floatingPlatforms.get(randIndex);
+            GroundPlatform groundPlatform = groundPlatforms.get(randIndex);
             Saw saw = new Saw(0, 0, 40, 40);
-            double maxX = floatingPlatform.x + floatingPlatform.width;
-            double minX = floatingPlatform.x;
+            double maxX = groundPlatform.x + groundPlatform.width;
+            double minX = groundPlatform.x;
             double x = rand.nextDouble(maxX - minX) + minX;
-            double y = floatingPlatform.y - saw.height * 0.6;
+            double y = groundPlatform.y - saw.height * 0.6;
             saw.x = x;
             saw.y = y;
             saw.maxX = (int) maxX;
             saw.minX = (int) minX;
             saws.add(saw);
-            floatingPlatformsWithSaws.add(randIndex);
+            groundPlatformsWithSaws.add(randIndex);
         }
         // place moving vertical blades between the floating platform gaps
         ArrayList<Integer> floatingPlatformGapsWithBlade = new ArrayList<>();
@@ -180,7 +194,7 @@ public class GamePanel extends JPanel {
 
             FloatingPlatform floatingPlatformLeft = floatingPlatforms.get(randIndex);
             FloatingPlatform floatingPlatformRight = floatingPlatforms.get(randIndex + 1);
-            Blade blade = new Blade(0, 0, 80, 80);
+            Blade blade = new Blade(0, 0, 60, 60);
             double distance = Math.abs(floatingPlatformLeft.x + floatingPlatformLeft.width - floatingPlatformRight.x);
             if (distance < blade.width * 2) {
                 continue;
@@ -223,15 +237,15 @@ public class GamePanel extends JPanel {
         ArrayList<Integer> floatingPlatormGapsWithCrates = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             int maxIndex = floatingPlatforms.size() - 2;
-            int minIndex = 2;
+            int minIndex = 1;
             int randIndex = rand.nextInt(maxIndex - minIndex) + minIndex;
             if (floatingPlatormGapsWithCrates.contains(randIndex))
                 continue;
-            Crate crateLeft = new Crate(0, 0, 40, 40);
-            Crate crateRight = new Crate(0, 0, 40, 40);
+            Crate crateLeft = new Crate(0, 0, 60, 60);
+            Crate crateRight = new Crate(0, 0, 60, 60);
             FloatingPlatform platformLeft = floatingPlatforms.get(randIndex);
             FloatingPlatform platformRight = floatingPlatforms.get(randIndex + 1);
-            int space = 30;
+            int space = 80;
             double crateLeftX = platformRight.x - crateLeft.width - space;
             double crateRightX = platformLeft.x + platformLeft.width + crateRight.width + space;
             double crateLeftY = rand.nextDouble(100) + 200;
@@ -260,6 +274,23 @@ public class GamePanel extends JPanel {
             coin.y = y;
             coins.add(coin);
         }
+        // rotating circular motion - blades
+        ArrayList<Integer> floatingPlatormWithRotatingBaldes = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            int randIndex = rand.nextInt(floatingPlatforms.size());
+            if (floatingPlatormWithRotatingBaldes.contains(randIndex)) {
+                continue;
+            }
+            FloatingPlatform randomFloatingPlatform = floatingPlatforms.get(randIndex);
+            RotatingBlade rotatingBlade = new RotatingBlade(0, 0, 60, 60);
+            double x = randomFloatingPlatform.x + 500;
+            double y = randomFloatingPlatform.y - rand.nextDouble(100) - 250;
+            rotatingBlade.x = x;
+            rotatingBlade.y = y;
+            rotatingBlades.add(rotatingBlade);
+            floatingPlatormWithRotatingBaldes.add(randIndex);
+        }
+
         flag = new Flag(
                 platforms.get(platforms.size() - 1).x + platforms.get(platforms.size() - 1).width - 80,
                 platforms.get(platforms.size() - 1).y - 80,
@@ -344,6 +375,19 @@ public class GamePanel extends JPanel {
             }
         }
     }
+        public void handlePlayerCollsionWithRotatingBlade() {
+        for (RotatingBlade rb : rotatingBlades) {
+            Rectangle rotatingBladeRect = new Rectangle((int) rb.x, (int) rb.y, rb.width, rb.height);
+            Rectangle playerRect = new Rectangle((int) player.x, (int) player.y, player.width, player.height);
+            if (rotatingBladeRect.intersects(playerRect) && player.alive) {
+                player.alive = false;
+                for (int i = 0; i < 20; i++) {
+                    particles.add(new Particle(player.x, player.y, 10, 10, Color.RED));
+                }
+                gameOver = true;
+            }
+        }
+    }
 
     public void handlePlayerOnPlatforms() {
         player.onGround = false;
@@ -384,10 +428,15 @@ public class GamePanel extends JPanel {
             Blade blade = blades.get(i);
             blade.update();
         }
+        for (int i = 0; i < rotatingBlades.size(); i++) {
+            RotatingBlade rotatingBlade = rotatingBlades.get(i);
+            rotatingBlade.update();
+        }
 
         handlePlayerCollsionWithSpike();
         handlePlayerCollsionWithSaw();
         handlePlayerCollsionWithBlades();
+        handlePlayerCollsionWithRotatingBlade();
         handlePlayerCollsionWithJumpPads();
         handlePlayerCollsionWithFlag();
         handlePlayerCollsionWithCoin();
@@ -424,6 +473,9 @@ public class GamePanel extends JPanel {
                 blades.forEach(blade -> {
                     blade.x += player.velocitX;
                 });
+                rotatingBlades.forEach(rotatingBlade -> {
+                    rotatingBlade.x += player.velocitX;
+                });
                 jumpPads.forEach(jumpPad -> {
                     jumpPad.x += player.velocitX;
                 });
@@ -450,6 +502,9 @@ public class GamePanel extends JPanel {
                 });
                 blades.forEach(blade -> {
                     blade.x -= player.velocitX;
+                });
+                rotatingBlades.forEach(rotatingBlade -> {
+                    rotatingBlade.x -= player.velocitX;
                 });
                 jumpPads.forEach(jumpPad -> {
                     jumpPad.x -= player.velocitX;
@@ -495,6 +550,11 @@ public class GamePanel extends JPanel {
         for (int i = 0; i < blades.size(); i++) {
             Blade blade = blades.get(i);
             blade.draw(g2d);
+            // blade.debugDraw(g2d);
+        }
+        for (int i = 0; i < rotatingBlades.size(); i++) {
+            RotatingBlade rotatingBlade = rotatingBlades.get(i);
+            rotatingBlade.draw(g2d);
             // blade.debugDraw(g2d);
         }
         for (int i = 0; i < jumpPads.size(); i++) {

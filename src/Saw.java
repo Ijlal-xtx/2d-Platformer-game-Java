@@ -13,7 +13,7 @@ public class Saw {
     public int width;
     public int height;
     public static BufferedImage sawImage;
-    public double velocitX = 0.5;
+    public double velocitX = 0.7;
     public int maxX;
     public int minX;
     public double angle = 0;
