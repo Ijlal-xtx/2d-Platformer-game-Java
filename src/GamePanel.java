@@ -13,6 +13,9 @@ import java.util.Arrays;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
+import java.awt.Font;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class GamePanel extends JPanel {
     private Player player;
@@ -37,8 +40,7 @@ public class GamePanel extends JPanel {
     private BufferedImage cactus1Img;
     private BufferedImage cactus2Img;
     private ArrayList<BufferedImage> vegetationImags = new ArrayList<>(
-        Arrays.asList(tree1Img,tree2Img,tree3Img,cactus1Img,cactus2Img,bush1Img,bush2Img)
-    );
+            Arrays.asList(tree1Img, tree2Img, tree3Img, cactus1Img, cactus2Img, bush1Img, bush2Img));
     private BufferedImage playerImg;
     // private RepeatingBackground backgroundImg;
     public double gravity = 0.3;
@@ -47,6 +49,7 @@ public class GamePanel extends JPanel {
     private int windowWidth = 1250;;
     private int windowHeight = 600;
     public boolean gameOver = false;
+    public boolean gameWon = false;
 
     GamePanel() {
         rand = new Random();
@@ -55,6 +58,12 @@ public class GamePanel extends JPanel {
         this.setPreferredSize(new Dimension(windowWidth, windowHeight));
         this.addKeyListener(new KeyboardInputs(player));
         this.setBackground(new Color(198, 255, 254));
+        this.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (gameOver || gameWon)
+                    init(); // click anywhere to restart
+            }
+        });
         init();
         flag = new Flag(
                 platforms.get(platforms.size() - 1).x + platforms.get(platforms.size() - 1).width - 80,
@@ -88,6 +97,7 @@ public class GamePanel extends JPanel {
 
         platforms.clear();
         gameOver = false;
+        gameWon = false;
         particles.clear();
         player.alive = true;
         scrollOffsetX = 0;
@@ -345,6 +355,8 @@ public class GamePanel extends JPanel {
         if (flagRect.intersects(playerRect) && player.alive) {
             // add other stuff
             System.out.println("You won the game!!");
+            gameWon = true;
+            player.alive = false;
         }
     }
 
@@ -375,7 +387,8 @@ public class GamePanel extends JPanel {
             }
         }
     }
-        public void handlePlayerCollsionWithRotatingBlade() {
+
+    public void handlePlayerCollsionWithRotatingBlade() {
         for (RotatingBlade rb : rotatingBlades) {
             Rectangle rotatingBladeRect = new Rectangle((int) rb.x, (int) rb.y, rb.width, rb.height);
             Rectangle playerRect = new Rectangle((int) player.x, (int) player.y, player.width, player.height);
@@ -449,10 +462,13 @@ public class GamePanel extends JPanel {
 
         handlePlayerOnPlatforms();
         handlePlayerOnCrates();
-        if ((particles.size() == 0 && gameOver) || player.y > windowHeight) {
-            init();
+        if (player.y > windowHeight && player.alive ) {
+            gameOver = true;
+            player.alive = false;
         }
-        if (player.moveLeft && player.x >= 100 || (player.moveLeft && scrollOffsetX == 0 && player.x > 0)) {
+
+       if(player.alive){
+           if (player.moveLeft && player.x >= 100 || (player.moveLeft && scrollOffsetX == 0 && player.x > 0)) {
             player.x -= player.velocitX;
         } else if (player.moveRight && player.x <= 350) {
             player.x += player.velocitX;
@@ -520,6 +536,7 @@ public class GamePanel extends JPanel {
             }
 
         }
+       }
     }
 
     public void paintComponent(Graphics g) {
@@ -580,6 +597,19 @@ public class GamePanel extends JPanel {
         spikes.forEach(spike -> {
             spike.draw(g2d);
         });
+        if (gameOver) {
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Arial", Font.BOLD, 50));
+            g2d.drawString("Game Over", getWidth() / 2 - 130, getHeight() / 2);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 20));
+            g2d.drawString("Click anywhere to restart", getWidth() / 2 - 100, getHeight() / 2 + 40);
+        } else if (gameWon) {
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Arial", Font.BOLD, 50));
+            g2d.drawString("You Win!", getWidth() / 2 - 110, getHeight() / 2);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 20));
+            g2d.drawString("Click anywhere to play again", getWidth() / 2 - 100, getHeight() / 2 + 40);
+        }
 
     }
 }
